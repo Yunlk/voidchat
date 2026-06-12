@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>voidchat</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="index-page">
+
+<main class="index-main">
+  <div class="index-header">
+    <h1 class="logo">voidchat</h1>
+    <p class="subtitle">选择一个频道，和某个人说几句话。</p>
+  </div>
+  <div class="char-grid" id="charGrid">
+    <div class="char-card loading">加载中……</div>
+  </div>
+</main>
+
+<script>
+(async () => {
+  const grid = document.getElementById('charGrid');
+  try {
+    const res = await fetch('/api/characters');
+    const chars = await res.json();
+    if (!chars.length) {
+      grid.innerHTML = '<p style="color:#666;text-align:center;grid-column:1/-1">还没有角色。<br>在 characters/ 目录下放一个 manifest.json + soul.md 就行。</p>';
+      return;
+    }
+    grid.innerHTML = chars.map(c => `
+      <a class="char-card" href="/chat?c=${c.id}">
+        <span class="char-card-name">${esc(c.name)}</span>
+        <span class="char-card-desc">${esc(c.description)}</span>
+        <span class="char-card-greet">${esc(c.greeting)}</span>
+      </a>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = '<p style="color:#cc4444;text-align:center;grid-column:1/-1">连接失败</p>';
+  }
+})();
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+
+</body>
+</html>

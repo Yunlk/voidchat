@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>voidchat</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="chat-page">
+
+<div class="chat-container">
+  <header class="chat-header">
+    <a href="/" class="back-btn">← 频道</a>
+    <span class="char-name" id="charName">…</span>
+    <span id="charModel"></span>
+  </header>
+  <div class="msg-list" id="msgList"></div>
+  <div class="input-bar">
+    <textarea id="msgInput" rows="1" placeholder="说点什么…" disabled></textarea>
+    <button id="sendBtn" disabled>↑</button>
+  </div>
+  <div class="status-bar" id="statusBar">连接中…</div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
