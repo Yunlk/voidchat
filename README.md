@@ -170,6 +170,78 @@ DEFAULT_MODEL=gpt-4o-mini
 
 `[DL:START]文件名` 触发浏览器真实下载（iframe），前端 `[DL:CANCEL]` 延时 800ms 后移除 iframe 并通知后端中断流。
 
+## Docker 架构
+
+```
+                  ┌──────────────────┐
+Browser :8000 ───►│  nginx (alpine)  │
+                  │  :80             │
+                  ├──────────────────┤
+                  │ /static/*        │──► 静态文件直出 (.css/.js)
+                  │ /api/*           │──► 代理 → voidchat:8000
+                  │ /chat            │──► 代理 → voidchat:8000
+                  │ /                │──► 代理 → voidchat:8000
+                  └──────────────────┘
+                            │
+                  ┌────────▼────────┐
+                  │  voidchat (自建) │
+                  │  FastAPI :8000   │
+                  │                  │
+                  │ characters/ ─────│──► volume 挂载 ../characters
+                  │ .env ────────────│──► env_file
+                  └──────────────────┘
+```
+
+### docker-compose.yml
+
+```yaml
+services:
+  voidchat:
+    build: .                        # 当前目录 Dockerfile
+    env_file: .env                  # 密钥 / API 地址
+    volumes:
+      - ../characters:/characters   # 角色文件实时同步
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8000:80"                   # 对外暴露
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static:/usr/share/nginx/html/static:ro
+    depends_on:
+      - voidchat
+    restart: unless-stopped
+```
+
+### nginx 做了什么
+
+| 功能 | 说明 |
+|------|------|
+| 静态直出 | CSS/JS 由 nginx 直出，7 天缓存，不经过 Python |
+| API 代理 | `/api/*` → FastAPI，`Proxy-*` 头全部转发 |
+| SSE 支持 | `proxy_buffering off`，读超时 300s |
+| 限流 | `/api/chat` 每 IP 每分钟最多 10 次，突发 5 |
+| 安全头 | `X-Content-Type-Options`, `X-Frame-Options` 等 |
+| GZip | 文本/JSON/CSS/JS 自动压缩 |
+
+### 目录结构（web/）
+
+```
+web/
+├── Dockerfile              # voidchat 后端镜像
+├── docker-compose.yml      # 编排 nginx + voidchat
+├── nginx.conf              # nginx 配置
+├── main.py                 # FastAPI 应用
+├── requirements.txt        # Python 依赖
+└── static/                 # 前端静态文件
+    ├── index.html          # 角色选择页
+    ├── chat.html           # 聊天页
+    ├── css/style.css
+    └── js/app.js
+```
+
 ## 前端
 
 纯静态 HTML/CSS/JS，零框架，零构建步骤。
