@@ -1,10 +1,19 @@
 services:
   voidchat:
     build: .
-    ports:
-      - "8000:8000"
     env_file:
       - .env
     volumes:
       - ../characters:/characters
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static:/usr/share/nginx/html/static:ro
+    depends_on:
+      - voidchat
     restart: unless-stopped
